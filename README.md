@@ -1,4 +1,4 @@
-# Jupyter notebooks for various Opencog functionalities
+# Jupyter notebooks for various Opencog libraries
 
 This repository holds various tutorials written in jupyter notebooks for various software repositories under the opencog organization. 
 
