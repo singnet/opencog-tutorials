@@ -1,4 +1,119 @@
-R u: lbl (hello) hi ^keep
+D topic: ~GREETING [hi hello]
+D urge: (please_user=1)
+D goal: (please_user=0.8)
+
+R u: lbl (hello) hello there! ^keep
 M hello
 N hi
-N hello
+
+D ordered-goal: (please_user=0.8)
+
+R #goal: (goal1=0.5) u: lbl (hi) hi there ^keep
+M hi
+
+R u: lbl (ghost) Ghost is a behavior scripting tool ^keep
+M ghost
+
+R #goal: (novelty=0.67 please_user=0.4) u: lbl (what be you name) I forgot ^keep
+M what is your name
+
+R u: lbl (dog) I have a cat ^keep
+M I like dogs
+M I have a dog
+
+R u: lbl (dogs) I have a cat ^keep
+M I like dogs
+N I have a dog
+
+R u: lbl (what be *1) I don't know ^keep
+M What is it?
+M What are you
+M What am I
+M What am I and what are you
+
+R u: lbl ( " dr. watson " ) How may I help You? ^keep
+M dr. watson
+
+R ?: lbl (you [swim ride fish ]) I do ^keep
+M do you swim?
+M do you fish?
+
+R ?: lbl (you [eat ingest "binge and purge" (feed my face ) ] meat) I love meat ^keep
+M do you feed my face meat
+
+D concept: ~eat [eat ingest "binge and purge"]
+
+R s: lbl (I ~eat meat) Do you really? I am a vegan. ^keep
+M I ingest meat
+
+R u: lbl (define {word concept} hate) Sorry. I don't know it. ^keep 
+M define word hate
+M define concept hate
+
+R u: lbl ( define { "the word" (the meaning of) } love ) Sorry. I don’t know it. ^keep
+M define the word love
+M define the meaning of love
+
+R u: lbl (when * you * home) I go home tomorrow ^keep
+M When will you go home
+M When Roger is with you, will there be anyone at home?
+M When you home?
+
+R u: lbl (when *1 you *1 to school) I went to school yesterday ^keep
+M When did you go to school?
+N When you go to school
+
+R u: lbl (you *~2 go *~2 gym) I often go to that gym. ^keep
+M You can go to gym
+M You should not go to gym
+
+D concept: ~meat [ham chicken beef]
+
+R u: lbl ( do you eat _~meat ) No, I hate _0. ^keep
+M do you eat ham
+
+R u: lbl ( do you eat _[ ham eggs bacon] ) I eat '_0. ^keep
+M do you eat eggs
+
+R u: lbl ( do you like _* or _* ) I don’t like '_0 so I guess that means I prefer '_1. ^keep
+M do you like tea or coffee
+
+R u: lbl ( I eat _*1 ) $food = '_0 I eat oysters. ^keep
+M I eat bread
+
+R u: lbl (what do I eat $food) You eat $food ^keep
+M what do I eat
+
+R u: lbl (what is an elephant > ) An elephant is a pachyderm. ^keep
+M Tell me what is an elephant
+N what is an elephant doing in the room
+
+R u: lbl ( roses < I like ) I like roses too. ^keep
+M I like roses
+N You know I like roses
+
+R u: lbl ( ![ not never rarely ] I * eat meat ) You eat meat. ^keep
+N I never eat meat
+M I eat meat
+
+R u: lbl ( << I birds love >> ) I love birds too. ^keep
+M I love birds
+M Birds are what I love
+
+R u: lbl (hey) [hello.][hi][hey] Are you going to [dance][swim][eat] anytime soon? ^keep
+M hey?
+
+R u: lbl ( who killed _* ) I think ^findkiller killed '_0
+M Who killed the dinosaurs
+
+R u: lbl (give me a smile) here you go ^smile
+M give me a smile
+
+R u: lbl (check output ^random-stv) There is output ^keep
+R u: lbl (are you happy ^is-happy(0.7) ) Yes I am happy ^keep
+
+# The ff rule does not have lbl label (this is a special case)
+R u: WHAT (what are you) I am a bot. ^keep
+R u: lbl (tell me about yourself) ^reuse(WHAT) ^keep
+M what are you
+M tell me about yourself
