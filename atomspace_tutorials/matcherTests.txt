@@ -1,0 +1,5 @@
+N (define (typedef type instance) (InheritanceLink (ConceptNode instance) type ))
+N (define color (ConceptNode "Color") ) ; No response to check for
+N (define animal (ConceptNode "Animal") ) ; No response to check for
+R (typedef color "Blue")  
+M (InheritanceLink  (ConceptNode "Blue") (ConceptNode "Color"))
