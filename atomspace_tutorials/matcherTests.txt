@@ -1,5 +1,26 @@
 N (define (typedef type instance) (InheritanceLink (ConceptNode instance) type ))
+
 N (define color (ConceptNode "Color") ) ; No response to check for
+
 N (define animal (ConceptNode "Animal") ) ; No response to check for
+
 R (typedef color "Blue")  
-M (InheritanceLink  (ConceptNode "Blue") (ConceptNode "Color"))
+M (InheritanceLink  
+(ConceptNode "Blue") (ConceptNode "Color"))
+R (typedef color "Red")
+M (InheritanceLink (ConceptNode "Red") (ConceptNode "Color"))
+
+N (define colornode
+	(GetLink
+		
+		(VariableNode "$color")
+		
+		(InheritanceLink
+			(VariableNode "$color")
+			(ConceptNode "Color")
+		)
+	)
+)
+
+R (display (cog-satisfy colornode))
+M (stv 1.000000 1.000000)
