@@ -21,7 +21,7 @@
 
 
 (define (test-func)
-	(call-with-input-file "PLNBackward.txt"
+	(call-with-input-file "matcherTests.txt"
 		(lambda (port)
 			(define num-rules 0)
 			(define num-statments 0)
