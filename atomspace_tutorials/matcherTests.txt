@@ -1,26 +1,276 @@
+N  (use-modules (ice-9 readline)) 
+N  (activate-readline)
+N  (add-to-load-path "/usr/local/share/opencog/scm")
+N  (add-to-load-path ".")
+N  (use-modules (opencog))
+N  (use-modules (opencog query))
+N  (use-modules (opencog exec))
+
 N (define (typedef type instance) (InheritanceLink (ConceptNode instance) type ))
 
 N (define color (ConceptNode "Color") ) ; No response to check for
 
 N (define animal (ConceptNode "Animal") ) ; No response to check for
 
+R  color
+M  (ConceptNode "Color")
+
 R (typedef color "Blue")  
 M (InheritanceLink  
-(ConceptNode "Blue") (ConceptNode "Color"))
+  (ConceptNode "Blue") (ConceptNode "Color"))
+
+R  (typedef color "Green")
+M  (InheritanceLink (ConceptNode "Green") (ConceptNode "Color"))
+  
 R (typedef color "Red")
 M (InheritanceLink (ConceptNode "Red") (ConceptNode "Color"))
 
-N (define colornode
-	(GetLink
-		
-		(VariableNode "$color")
-		
-		(InheritanceLink
-			(VariableNode "$color")
-			(ConceptNode "Color")
-		)
-	)
-)
+R  (typedef animal "fish")
+M  (InheritanceLink (ConceptNode "fish") (ConceptNode "Animal"))
+
+R  (typedef animal "dog")
+M  (InheritanceLink (ConceptNode "dog") (ConceptNode "Animal"))
+
+R  (typedef animal "cat")
+M  (InheritanceLink (ConceptNode "cat") (ConceptNode "Animal"))
+
+N (define colornode (GetLink (VariableNode "$color")(InheritanceLink (VariableNode "$color") (ConceptNode "Color"))))
 
 R (display (cog-satisfy colornode))
 M (stv 1.000000 1.000000)
+
+R  (display (cog-satisfying-set colornode))
+M  (SetLink (ConceptNode "Blue") (ConceptNode "Red") (ConceptNode "Green"))
+
+N  (define rewrite 
+   (BindLink
+		
+		(VariableNode "$denizen")(typedef animal "fish")
+		
+		(InheritanceLink
+			(VariableNode "$denizen")
+			(ConceptNode "Animal")
+		)
+		
+		
+		(InheritanceLink
+			(VariableNode "$denizen")
+			(ConceptNode "Pet")
+		)
+	 )
+	)
+
+R  (display (cog-bind rewrite))
+M  (SetLink
+	   (InheritanceLink
+		  (ConceptNode "fish")
+		  (ConceptNode "Pet")
+	   )
+	   (InheritanceLink
+		  (ConceptNode "cat")
+		  (ConceptNode "Pet")
+	   )
+	   (InheritanceLink
+		  (ConceptNode "dog")
+		  (ConceptNode "Pet")
+	   )
+	)
+	
+N  (define petnode
+		(GetLink
+			
+			(TypedVariableLink
+				(VariableNode "$animal")
+				(TypeNode "ConceptNode")
+			)
+			
+			(InheritanceLink
+				(VariableNode "$animal")
+				(ConceptNode "Pet")
+			)
+		)
+   )
+   
+R  (display "SatisfactionLink with cog-satisfying-set")
+   (display (cog-satisfying-set petnode))
+M  "SatisfactionLink with cog-satisfying-set"
+   (SetLink
+	   (ConceptNode "cat")
+	   (ConceptNode "dog")
+	   (ConceptNode "fish")
+	)
+
+N	(define executablepetnode
+		(GetLink
+			
+			(TypedVariableLink
+				(VariableNode "$animal")
+				(TypeNode "ConceptNode")
+			)
+			
+			(InheritanceLink
+				(VariableNode "$animal")
+				(ConceptNode "Pet")
+			)
+		)
+)
+
+R	(display "GetLink with cog-satisfying-set")
+	(display (cog-satisfying-set executablepetnode))
+M	(SetLink
+	   (ConceptNode "cat")
+	   (ConceptNode "dog")
+	   (ConceptNode "fish")
+	)
+	
+R	(display "GetLink with cog-execute!")
+M	"GetLink with cog-execute!"
+R   (display (cog-execute! executablepetnode))
+M	(SetLink
+	   (ConceptNode "cat")
+	   (ConceptNode "dog")
+	   (ConceptNode "fish")
+	)
+	
+N	(define writequery
+		(PutLink
+
+			(InheritanceLink
+				(VariableNode "$x")
+				(ConceptNode "PrimaryColor")
+			)
+					 
+			(SetLink
+				(ConceptNode "Red")
+				(ConceptNode "Green")
+				(ConceptNode "Blue")
+			)
+		)
+	)
+	
+R	(display (cog-execute! writequery))
+M	(SetLink
+	   (InheritanceLink
+		  (ConceptNode "Blue")
+		  (ConceptNode "PrimaryColor")
+	   )
+	   (InheritanceLink
+		  (ConceptNode "Green")
+		  (ConceptNode "PrimaryColor")
+	   )
+	   (InheritanceLink
+		  (ConceptNode "Red")
+		  (ConceptNode "PrimaryColor")
+	   )
+	)
+	
+N	(define primarycolors (GetLink (TypedVariableLink (VariableNode "$color") (TypeNode "ConceptNode")) (InheritanceLink (VariableNode "$color")(ConceptNode "PrimaryColor"))))
+	
+R	(display (cog-execute! primarycolors))
+M	(SetLink
+	   (ConceptNode "Blue")
+	   (ConceptNode "Red")
+	   (ConceptNode "Green")
+	)
+
+N	(define writequery
+		(PutLink
+			
+			(InheritanceLink
+				(VariableNode "$x")
+				(ConceptNode "PrimaryColor")
+			)
+			
+			(GetLink
+			
+				(TypedVariableLink
+					(VariableNode "$color")
+					(TypeNode "ConceptNode")
+				)
+			
+				(InheritanceLink
+					(VariableNode "$color")
+					(ConceptNode "Color")
+				)
+			)
+		)
+	)
+	
+R	(display (cog-execute! writequery))
+M	(SetLink
+	   (InheritanceLink
+		  (ConceptNode "Blue")
+		  (ConceptNode "PrimaryColor")
+	   )
+	   (InheritanceLink
+		  (ConceptNode "Green")
+		  (ConceptNode "PrimaryColor")
+	   )
+	   (InheritanceLink
+		  (ConceptNode "Red")
+		  (ConceptNode "PrimaryColor")
+	   )
+	)
+	
+N	(define primarycolors
+		(GetLink
+			(TypedVariableLink
+				(VariableNode "$color")
+				(TypeNode "ConceptNode")
+			)
+			
+			(InheritanceLink
+				(VariableNode "$color")
+				(ConceptNode "PrimaryColor")
+			)
+		)
+	)
+	
+R	(display (cog-execute! primarycolors))
+M	(SetLink
+	   (ConceptNode "Blue")
+	   (ConceptNode "Red")
+	   (ConceptNode "Green")
+	)
+	
+N	(define getcolors
+		(GetLink
+			
+			(TypedVariableLink
+				(VariableNode "$obj")
+			
+			
+				(TypeChoice
+					(TypeNode "VariableNode")
+					(TypeNode "ConceptNode")
+				)
+			)
+			
+			
+			(ChoiceLink
+			
+				(InheritanceLink 
+					(VariableNode "$obj")
+					(ConceptNode "Color")
+				)
+			
+				(InheritanceLink
+					(VariableNode "$obj")
+					(ConceptNode "PrimaryColor")
+				)
+			)
+		)
+	)
+	
+R	(display "All colors\n")
+	(display (cog-execute! getcolors))
+M	All colors
+	(SetLink
+	   (VariableNode "$x")
+	   (VariableNode "$color")
+	   (ConceptNode "Blue")
+	   (ConceptNode "Red")
+	   (ConceptNode "Green")
+	)
+	
+N (display "done!")
