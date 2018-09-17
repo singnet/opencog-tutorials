@@ -34,18 +34,19 @@ M  (InheritanceLink (ConceptNode "dog") (ConceptNode "Animal"))
 R  (typedef animal "cat")
 M  (InheritanceLink (ConceptNode "cat") (ConceptNode "Animal"))
 
-N (define colornode (GetLink (VariableNode "$color")(InheritanceLink (VariableNode "$color") (ConceptNode "Color"))))
+N  (define colornode (GetLink (VariableNode "$color")(InheritanceLink (VariableNode "$color") (ConceptNode "Color"))))
 
-R (display (cog-satisfy colornode))
-M (stv 1.000000 1.000000)
+R  (cog-satisfy colornode)
+M  (stv 1.000000 1.000000)
 
-R  (display (cog-satisfying-set colornode))
+R  (cog-satisfying-set colornode)
 M  (SetLink (ConceptNode "Blue") (ConceptNode "Red") (ConceptNode "Green"))
 
 N  (define rewrite 
    (BindLink
 		
-		(VariableNode "$denizen")(typedef animal "fish")
+		(VariableNode "$denizen")
+
 		
 		(InheritanceLink
 			(VariableNode "$denizen")
@@ -60,7 +61,7 @@ N  (define rewrite
 	 )
 	)
 
-R  (display (cog-bind rewrite))
+R  (cog-bind rewrite)
 M  (SetLink
 	   (InheritanceLink
 		  (ConceptNode "fish")
@@ -91,10 +92,9 @@ N  (define petnode
 		)
    )
    
-R  (display "SatisfactionLink with cog-satisfying-set")
-   (display (cog-satisfying-set petnode))
-M  "SatisfactionLink with cog-satisfying-set"
-   (SetLink
+
+R   (cog-satisfying-set petnode)
+M   (SetLink
 	   (ConceptNode "cat")
 	   (ConceptNode "dog")
 	   (ConceptNode "fish")
@@ -115,17 +115,17 @@ N	(define executablepetnode
 		)
 )
 
-R	(display "GetLink with cog-satisfying-set")
-	(display (cog-satisfying-set executablepetnode))
+
+
+R	(cog-satisfying-set executablepetnode)
 M	(SetLink
 	   (ConceptNode "cat")
 	   (ConceptNode "dog")
 	   (ConceptNode "fish")
 	)
 	
-R	(display "GetLink with cog-execute!")
-M	"GetLink with cog-execute!"
-R   (display (cog-execute! executablepetnode))
+
+R   (cog-execute! executablepetnode)
 M	(SetLink
 	   (ConceptNode "cat")
 	   (ConceptNode "dog")
@@ -148,7 +148,7 @@ N	(define writequery
 		)
 	)
 	
-R	(display (cog-execute! writequery))
+R	(cog-execute! writequery)
 M	(SetLink
 	   (InheritanceLink
 		  (ConceptNode "Blue")
@@ -164,9 +164,20 @@ M	(SetLink
 	   )
 	)
 	
-N	(define primarycolors (GetLink (TypedVariableLink (VariableNode "$color") (TypeNode "ConceptNode")) (InheritanceLink (VariableNode "$color")(ConceptNode "PrimaryColor"))))
+N	(define primarycolors 
+       (GetLink 
+
+       (TypedVariableLink 
+       (VariableNode "$color")
+       (TypeNode "ConceptNode"))
+       
+       (InheritanceLink
+       (VariableNode "$color")
+       (ConceptNode "PrimaryColor")
+
+    )))
 	
-R	(display (cog-execute! primarycolors))
+R	(cog-execute! primarycolors)
 M	(SetLink
 	   (ConceptNode "Blue")
 	   (ConceptNode "Red")
@@ -196,7 +207,7 @@ N	(define writequery
 		)
 	)
 	
-R	(display (cog-execute! writequery))
+R	(cog-execute! writequery)
 M	(SetLink
 	   (InheritanceLink
 		  (ConceptNode "Blue")
@@ -226,7 +237,7 @@ N	(define primarycolors
 		)
 	)
 	
-R	(display (cog-execute! primarycolors))
+R	(cog-execute! primarycolors)
 M	(SetLink
 	   (ConceptNode "Blue")
 	   (ConceptNode "Red")
@@ -262,15 +273,14 @@ N	(define getcolors
 		)
 	)
 	
-R	(display "All colors\n")
-	(display (cog-execute! getcolors))
-M	All colors
-	(SetLink
+
+R	(cog-execute! getcolors)
+M	(SetLink
 	   (VariableNode "$x")
 	   (VariableNode "$color")
 	   (ConceptNode "Blue")
 	   (ConceptNode "Red")
 	   (ConceptNode "Green")
 	)
-	
+
 N (display "done!")
