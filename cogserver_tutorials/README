@@ -1,5 +1,6 @@
 In this folder you will find experimental tutorials that require the opencog cogserver to be running in order to work.
 These sample tutorials are of 
-	https://wiki.opencog.org/w/Hands_On_with_the_Time_Space_Map and https://wiki.opencog.org/w/Using_The_Pattern_Miner
+	https://wiki.opencog.org/w/Hands_On_with_the_Time_Space_Map , https://wiki.opencog.org/w/Using_The_Pattern_Miner and https://github.com/opencog/opencog/tree/master//opencog/ghost
+	
 
 Right now they are at the early stages	
