@@ -6,40 +6,42 @@ N  (use-modules (opencog))
 N  (use-modules (opencog query))
 N  (use-modules (opencog exec))
 
+N  (test-begin "PatternMatcher-tests")
+
 N (define (typedef type instance) (InheritanceLink (ConceptNode instance) type ))
 
 N (define color (ConceptNode "Color") ) ; No response to check for
 
 N (define animal (ConceptNode "Animal") ) ; No response to check for
 
-R  color
+R A color
 M  (ConceptNode "Color")
 
-R (typedef color "Blue")  
+R B (typedef color "Blue")  
 M (InheritanceLink  
   (ConceptNode "Blue") (ConceptNode "Color"))
 
-R  (typedef color "Green")
+R C (typedef color "Green")
 M  (InheritanceLink (ConceptNode "Green") (ConceptNode "Color"))
   
-R (typedef color "Red")
+R D (typedef color "Red")
 M (InheritanceLink (ConceptNode "Red") (ConceptNode "Color"))
 
-R  (typedef animal "fish")
+R E (typedef animal "fish")
 M  (InheritanceLink (ConceptNode "fish") (ConceptNode "Animal"))
 
-R  (typedef animal "dog")
+R F (typedef animal "dog")
 M  (InheritanceLink (ConceptNode "dog") (ConceptNode "Animal"))
 
-R  (typedef animal "cat")
+R G (typedef animal "cat")
 M  (InheritanceLink (ConceptNode "cat") (ConceptNode "Animal"))
 
 N  (define colornode (GetLink (VariableNode "$color")(InheritanceLink (VariableNode "$color") (ConceptNode "Color"))))
 
-R  (cog-satisfy colornode)
+R H (cog-satisfy colornode)
 M  (stv 1.000000 1.000000)
 
-R  (cog-satisfying-set colornode)
+R I (cog-satisfying-set colornode)
 M  (SetLink (ConceptNode "Blue") (ConceptNode "Red") (ConceptNode "Green"))
 
 N  (define rewrite 
@@ -61,7 +63,7 @@ N  (define rewrite
 	 )
 	)
 
-R  (cog-bind rewrite)
+R J (cog-bind rewrite)
 M  (SetLink
 	   (InheritanceLink
 		  (ConceptNode "fish")
@@ -93,7 +95,7 @@ N  (define petnode
    )
    
 
-R   (cog-satisfying-set petnode)
+R K (cog-satisfying-set petnode)
 M   (SetLink
 	   (ConceptNode "cat")
 	   (ConceptNode "dog")
@@ -117,7 +119,7 @@ N	(define executablepetnode
 
 
 
-R	(cog-satisfying-set executablepetnode)
+R L (cog-satisfying-set executablepetnode)
 M	(SetLink
 	   (ConceptNode "cat")
 	   (ConceptNode "dog")
@@ -125,7 +127,7 @@ M	(SetLink
 	)
 	
 
-R   (cog-execute! executablepetnode)
+R O (cog-execute! executablepetnode)
 M	(SetLink
 	   (ConceptNode "cat")
 	   (ConceptNode "dog")
@@ -148,7 +150,7 @@ N	(define writequery
 		)
 	)
 	
-R	(cog-execute! writequery)
+R P	(cog-execute! writequery)
 M	(SetLink
 	   (InheritanceLink
 		  (ConceptNode "Blue")
@@ -177,7 +179,7 @@ N	(define primarycolors
 
     )))
 	
-R	(cog-execute! primarycolors)
+R Q	(cog-execute! primarycolors)
 M	(SetLink
 	   (ConceptNode "Blue")
 	   (ConceptNode "Red")
@@ -207,7 +209,7 @@ N	(define writequery
 		)
 	)
 	
-R	(cog-execute! writequery)
+R S	(cog-execute! writequery)
 M	(SetLink
 	   (InheritanceLink
 		  (ConceptNode "Blue")
@@ -237,7 +239,7 @@ N	(define primarycolors
 		)
 	)
 	
-R	(cog-execute! primarycolors)
+R T (cog-execute! primarycolors)
 M	(SetLink
 	   (ConceptNode "Blue")
 	   (ConceptNode "Red")
@@ -274,7 +276,7 @@ N	(define getcolors
 	)
 	
 
-R	(cog-execute! getcolors)
+R U	(cog-execute! getcolors)
 M	(SetLink
 	   (VariableNode "$x")
 	   (VariableNode "$color")
@@ -283,4 +285,5 @@ M	(SetLink
 	   (ConceptNode "Green")
 	)
 
-N (display "done!")
+
+N  (test-end "PatternMatcher-tests")

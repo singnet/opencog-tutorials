@@ -7,7 +7,7 @@ N (use-modules (opencog query))
 N (use-modules (opencog exec))
 N (use-modules (opencog logger))
 
-R (cog-logger-set-level! "debug")
+R A (cog-logger-set-level! "debug")
 M "INFO"
 
 N (use-modules (opencog rule-engine))
@@ -18,8 +18,10 @@ N (use-modules (opencog rule-engine))
 
 
 N	(use-modules (opencog rule-engine))
-N	(use-modules (srfi srfi-1))
+N	(use-modules (srfi srfi-64))
 
+
+N (test-begin "PLNBackward-tests")
 	
 N	(define (gen-variable prefix i)
 	  (Variable (string-append prefix "-" (number->string i))))
@@ -77,7 +79,7 @@ N	(define fuzzy-conjunction-introduction-2ary-rule
 N	(define fuzzy-conjunction-introduction-2ary-rule-name
 	  (DefinedSchema "fuzzy-conjunction-introduction-2ary-rule"))
 	  
-R	(DefineLink
+R B (DefineLink
 	  fuzzy-conjunction-introduction-2ary-rule-name
 	  fuzzy-conjunction-introduction-2ary-rule)
 M	(DefineLink
@@ -191,7 +193,7 @@ N	(define (conditional-full-instantiation-formula Q Impl P)
 N	(define conditional-full-instantiation-meta-rule-name
 	  (DefinedSchemaNode "conditional-full-instantiation-meta-rule"))
 	  
-R	(DefineLink conditional-full-instantiation-meta-rule-name
+R C	(DefineLink conditional-full-instantiation-meta-rule-name
 	  conditional-full-instantiation-meta-rule)
 M	(DefineLink
 	   (DefinedSchemaNode "conditional-full-instantiation-meta-rule")
@@ -288,7 +290,7 @@ M	(DefineLink
 N	(define ci-rbs (ConceptNode "ci-rbs"))
 N	(Inheritance ci-rbs (ConceptNode "URE"))
 
-R	(MemberLink (stv 1 1)
+R D	(MemberLink (stv 1 1)
 	   conditional-full-instantiation-meta-rule-name
 	   ci-rbs
 	)
@@ -297,20 +299,20 @@ M	(MemberLink (stv 1 1)
 	   (ConceptNode "ci-rbs")
 	)
 	
-R	(MemberLink (stv 1 1) fuzzy-conjunction-introduction-2ary-rule-name ci-rbs )
+R E	(MemberLink (stv 1 1) fuzzy-conjunction-introduction-2ary-rule-name ci-rbs )
 M	(MemberLink (stv 1 1)
 	   (DefinedSchemaNode "fuzzy-conjunction-introduction-2ary-rule")
 	   (ConceptNode "ci-rbs")
 	)
 	
-R	(ExecutionLink (SchemaNode "URE:maximum-iterations") ci-rbs (NumberNode "20"))
+R F	(ExecutionLink (SchemaNode "URE:maximum-iterations") ci-rbs (NumberNode "20"))
 M	(ExecutionLink
 	   (SchemaNode "URE:maximum-iterations")
 	   (ConceptNode "ci-rbs")
 	   (NumberNode "20.000000")
 	)
 	
-R	(EvaluationLink (stv 0 1) (PredicateNode "URE:attention-allocation") ci-rbs )
+R G	(EvaluationLink (stv 0 1) (PredicateNode "URE:attention-allocation") ci-rbs )
 M	(EvaluationLink (stv 0 1)
 	   (PredicateNode "URE:attention-allocation")
 	   (ConceptNode "ci-rbs")
@@ -324,10 +326,13 @@ N	(define vardecl
 	  (TypedVariable (VariableNode "$what") (TypeNode "ConceptNode"))
 	)
 	
-R	(cog-bc ci-rbs target #:vardecl vardecl)
+R H	(cog-bc ci-rbs target #:vardecl vardecl)
 M	(SetLink
 	   (InheritanceLink (stv 1 1)
 		  (ConceptNode "Fritz")
 		  (ConceptNode "green")
 	   )
 	)
+
+N (test-end "PLNBackward-tests")	
+
