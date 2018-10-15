@@ -7,9 +7,6 @@
 ; 2. After the above symbol, a space (or any number of space) is required before writing rules or expression.
 ; 3. Expression with multiple lines is allowed
 ; 4. Comment lines are allowed
-; 5. Lines with comments along side an expression are not allowed.
-;    for example:
-;                 (define animal "dog") ; variable definition
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (use-modules (ice-9 textual-ports))
