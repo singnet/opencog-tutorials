@@ -141,8 +141,8 @@
                   (catch #t
                     (lambda ()
                       (set! expected (string-trim (substring expected 1)))
-                      (test-equal (test-read-eval-string expected) (test-read-eval-string line)) ; "expected" is evaluated to obtain the actually expected list.
-                      (display (test-read-eval-string expected))
+                      (test-equal (eval-string expected) (eval-string line)) ; "expected" is evaluated to obtain the actually expected list.
+                      (display (eval-string expected))
                       (display "\n")
                       (display (center-string (string-upcase (object->string (test-result-kind ))) 24 #\< #\>))
 											(if (equal? (string-upcase (object->string (test-result-kind ))) "PASS")
@@ -182,7 +182,7 @@
 
             ;;;just execute the line and display it's execution response;;;
             (catch #t
-              (lambda () (display (test-read-eval-string line)))
+              (lambda () (display (eval-string line)))
               (lambda (key . args)
                 (display "\nERROR: possibly syntax error.\n")
                 (set! num-fN (+ num-fN 1))
