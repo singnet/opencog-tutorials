@@ -1,0 +1,8 @@
+sudo vi /usr/local/share/opencog/scm/opencog/openpsi/main.scm
+line # 14: (cog-logger-set-level! opl "info")
+line # 132: (usleep 100000)
+
+sudo vi /usr/local/share/opencog/scm/opencog/ghost/matcher.scm
+line # 283: (rule-selected (eval-and-select candidate-rules #t)))
+
+sudo cp /opencog/notebooks/guile-jupyter-kernel.scm /usr/local/share/jupyter/kernels/guile-kernel/src/guile-jupyter-kernel.scm
