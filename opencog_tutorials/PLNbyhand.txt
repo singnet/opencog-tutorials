@@ -1,0 +1,344 @@
+N (use-modules (ice-9 readline)) 
+N (activate-readline)
+N (add-to-load-path "/usr/local/share/opencog/scm")
+N (add-to-load-path ".")
+N (use-modules (opencog))
+N (use-modules (opencog query))
+N (use-modules (opencog exec))
+N (use-modules (opencog logger))
+
+
+N (test-begin "PLNbyhand-tests")
+
+N (define (limit x l u)
+  (max l (min u x)))
+
+; Consistency Conditions
+N (define (smallest-intersection-probability sA sB)
+  (limit (/ (+ sA sB -1) sA) 0 1))
+
+N (define (largest-intersection-probability sA sB)
+  (limit (/ sB sA) 0 1))
+
+N (define (conditional-probability-consistency sA sB sAB)
+     (and (< 0 sA)
+       (<= (smallest-intersection-probability sA sB) sAB)
+       (<= sAB (largest-intersection-probability sA sB))))
+
+; Main Formula
+
+N (define (simple-deduction-strength-formula sA sB sC sAB sBC)
+   (if
+     (and
+        (conditional-probability-consistency sA sB sAB)
+        (conditional-probability-consistency sB sC sBC)) 
+        ;; Preconditions are met
+     (if (< 0.99 sB)
+        ;; sB tends to 1
+        sC
+        ;; otherwise
+        (+ (* sAB sBC) (/ (* (- 1 sAB) (- sC (* sB sBC))) (- 1 sB))))
+     ;; Preconditions are not met
+     0))
+
+N (define (inversion-consistency sA sB sAB)
+  (and (< 0 sA)
+       (< 0 sB)
+       (<= (smallest-intersection-probability sA sB) sAB)
+       (<= sAB (largest-intersection-probability sA sB))))
+
+N (define (inversion-strength-formula sA sB sAB)
+  (if (inversion-consistency sA sB sAB)
+      (/ (* sAB sA) sB)
+      0))
+N (define (invert a)
+    (/ 1.0 a))
+
+;; =============================================================================
+;; Negate formula
+;;
+;; Negates the probability
+;; -----------------------------------------------------------------------------
+
+N (define (negate a)
+    (- 1 a))
+
+;; =============================================================================
+;; Transitive Similarity Formula
+;;
+;; Returns the strength value of the transitive similarity rule
+;; -----------------------------------------------------------------------------
+
+N (define (transitive-similarity-strength-formula sA sB sC sAB sBC )
+    (let
+        ((T1 (/ (* (+ 1 (/ sB sA)) (sAB)) (+ 1 sAB)))
+         (T2 (/ (* (+ 1 (/ sC sB)) (sBC)) (+ 1 sBC)))
+         (T3 (/ (* (+ 1 (/ sB sC)) (sBC)) (+ 1 sBC)))
+         (T4 (/ (* (+ 1 (/ sA sB)) (sAB)) (+ 1 sAB))))
+        (invert (- (+ (invert (+ (* T1 T2) (* (negate T1) (/ (- sC (* sB T2)) (negate sB)))))
+                      (invert (+ (* T3 T4) (* (negate T3) (/ (- sC (* sB T4)) (negate sB)))))) 1))))   
+
+N (define (precise-modus-ponens-strength-formula sA sAB snotAB)
+    (+ (* sAB sA) (* snotAB (negate sA))))
+  
+  
+N (define (gen-deduction-rule link-type var-type)
+    (let* ((A (Variable "$A"))
+       (B (Variable "$B"))
+       (C (Variable "$C"))
+       (AB (link-type A B))
+       (BC (link-type B C))
+       (AC (link-type A C)))
+    (Bind
+      (VariableList
+      (TypedVariable A var-type)
+      (TypedVariable B var-type)
+      (TypedVariable C var-type))
+      (And
+      AB
+      BC
+      (Not (Identical A C)))
+      (ExecutionOutput
+      (GroundedSchema "scm: deduction-formula")
+      (List
+        AC
+        AB
+        BC)))))
+
+N (define deduction-inheritance-rule
+    (let ((var-type (TypeChoice
+            (TypeNode "ConceptNode")
+            (TypeNode "AndLink")
+            (TypeNode "OrLink")
+            (TypeNode "NotLink"))))
+    (gen-deduction-rule InheritanceLink var-type)))
+
+N (define deduction-implication-rule
+    (let ((var-type (TypeChoice
+            (TypeNode "PredicateNode")
+            (TypeNode "LambdaLink")
+            (TypeNode "AndLink")
+            (TypeNode "OrLink")
+            (TypeNode "NotLink"))))
+    (gen-deduction-rule ImplicationLink var-type)))
+
+N (define deduction-subset-rule
+    (let ((var-type (TypeChoice
+            (TypeNode "ConceptNode")
+            (TypeNode "AndLink")
+            (TypeNode "OrLink")
+            (TypeNode "NotLink"))))
+    (gen-deduction-rule SubsetLink var-type)))
+
+N (define (deduction-formula conclusion . premises)
+    (if (= (length premises) 2)
+    (let*
+      ((AC conclusion)
+       (AB (list-ref premises 0))
+       (BC (list-ref premises 1))
+       (sA (cog-stv-strength (gar AB)))
+       (cA (cog-stv-confidence (gar AB)))
+       (sB (cog-stv-strength (gar BC)))
+       (cB (cog-stv-confidence (gar BC)))
+       (sC (cog-stv-strength (gdr BC)))
+       (cC (cog-stv-confidence (gdr BC)))
+       (sAB (cog-stv-strength AB))
+       (cAB (cog-stv-confidence AB))
+       (sBC (cog-stv-strength BC))
+       (cBC (cog-stv-confidence BC))
+       (alpha 0.9) 
+       ; how much confidence is lost at each deduction step
+
+
+       (sA (if (and (< 0.99 sA) (<= cA 0)) 0.25 sA))
+       (sB (if (and (< 0.99 sB) (<= cB 0)) 0.25 sB))
+       (sC (if (and (< 0.99 sC) (<= cC 0)) 0.25 sC)))
+      (if (and
+         (or (= 0 cA) (= 0 cB) (= 0 cAB)
+           (conditional-probability-consistency sA sB sAB))
+         (or (= 0 cB) (= 0 cC) (= 0 cBC)
+           (conditional-probability-consistency sB sC sBC)))
+        (if (< 0.99 (* sB cB))
+
+          (let ((sAC sC)
+            (cAC (* alpha cA cC)))
+          (if (and (< 1e-8 sAC) (< 1e-8 cAC)) 
+
+            (cog-merge-hi-conf-tv! AC (stv sAC cAC))))
+
+          (let* ((sAC (if (or (< 0.99 (* sAB cAB)) (< 0.99 (* sBC cBC)))
+
+                  (* sAB sBC)
+
+                  (simple-deduction-strength-formula sA sB sC sAB sBC)))
+             (cAC (min cAB cBC))
+
+             (cAC (* (if (< cAC 0.99) alpha 1.0) cAC)))
+          (if (and (< 1e-8 sAC) (< 1e-8 cAC)) 
+
+            (cog-merge-hi-conf-tv! AC (stv sAC cAC)))))))))
+
+  
+N (define deduction-inheritance-rule-name
+    (DefinedSchemaNode "deduction-inheritance-rule"))
+N (DefineLink deduction-inheritance-rule-name
+    deduction-inheritance-rule)
+
+N (define deduction-implication-rule-name
+    (DefinedSchemaNode "deduction-implication-rule"))
+N (DefineLink deduction-implication-rule-name
+    deduction-implication-rule)
+
+N (define deduction-subset-rule-name
+    (DefinedSchemaNode "deduction-subset-rule"))
+    
+R A (DefineLink deduction-subset-rule-name deduction-subset-rule)
+M (DefineLink
+     (DefinedSchemaNode "deduction-subset-rule")
+     (BindLink
+      (VariableList
+       (TypedVariableLink
+        (VariableNode "$A")
+        (TypeChoice
+           (TypeNode "ConceptNode")
+           (TypeNode "AndLink")
+           (TypeNode "OrLink")
+           (TypeNode "NotLink")
+        )
+       )
+       (TypedVariableLink
+        (VariableNode "$B")
+        (TypeChoice
+           (TypeNode "ConceptNode")
+           (TypeNode "AndLink")
+           (TypeNode "OrLink")
+           (TypeNode "NotLink")
+        )
+       )
+       (TypedVariableLink
+        (VariableNode "$C")
+        (TypeChoice
+           (TypeNode "ConceptNode")
+           (TypeNode "AndLink")
+           (TypeNode "OrLink")
+           (TypeNode "NotLink")
+        )
+       )
+      )
+      (AndLink
+       (SubsetLink
+        (VariableNode "$B")
+        (VariableNode "$C")
+       )
+       (SubsetLink
+        (VariableNode "$A")
+        (VariableNode "$B")
+       )
+       (NotLink
+        (IdenticalLink
+           (VariableNode "$A")
+           (VariableNode "$C")
+        )
+       )
+      )
+      (ExecutionOutputLink
+       (GroundedSchemaNode "scm: deduction-formula")
+       (ListLink
+        (SubsetLink
+           (VariableNode "$A")
+           (VariableNode "$C")
+        )
+        (SubsetLink
+           (VariableNode "$A")
+           (VariableNode "$B")
+        )
+        (SubsetLink
+           (VariableNode "$B")
+           (VariableNode "$C")
+        )
+       )
+      )
+     )
+  )
+  
+N (ConceptNode "Socrates" (stv .001 0.9))
+N (ConceptNode "Einstein" (stv .001 0.9))
+N (ConceptNode "Peirce" (stv .001 0.9))
+N (ConceptNode "man" (stv .01 0.9))
+N (ConceptNode "human" (stv .02 0.9))
+
+  ; Define the instances of man
+
+N (InheritanceLink (stv 0.9 0.9)
+    (ConceptNode "Socrates")
+    (ConceptNode "man"))
+
+N (InheritanceLink (stv 0.9 0.9)
+    (ConceptNode "Einstein")
+    (ConceptNode "man"))
+
+N (InheritanceLink (stv 0.9 0.9)
+    (ConceptNode "Peirce")
+    (ConceptNode "man"))
+
+  ; Define what man is part of
+
+N (InheritanceLink (stv 0.9 0.9)
+    (ConceptNode "man")
+    (ConceptNode "human"))
+
+  ; Assign some additional memberships as well
+
+N (InheritanceLink (stv 0.9 0.9) (ConceptNode "Einstein") (ConceptNode "violin-players"))
+
+  ; Pattern to match to check the output
+
+N (define find-humans
+    (BindLink
+      (VariableNode "$X")
+      (InheritanceLink
+        (VariableNode "$X")
+        (ConceptNode "human"))
+      (ListLink
+        (VariableNode "$X"))))
+        
+R B (cog-execute! find-humans)
+M (SetLink
+     (ListLink
+      (ConceptNode "man" (stv 0.01 0.9))
+     )
+  )
+  
+R C (cog-execute! deduction-inheritance-rule)
+M (SetLink
+     (InheritanceLink (stv 0.81111111 0.81)
+      (ConceptNode "Einstein" (stv 0.001 0.9))
+      (ConceptNode "human" (stv 0.02 0.9))
+     )
+     (InheritanceLink (stv 0.81111111 0.81)
+      (ConceptNode "Socrates" (stv 0.001 0.9))
+      (ConceptNode "human" (stv 0.02 0.9))
+     )
+     (InheritanceLink (stv 0.81111111 0.81)
+      (ConceptNode "Peirce" (stv 0.001 0.9))
+      (ConceptNode "human" (stv 0.02 0.9))
+     )
+  )
+  
+R D (cog-execute! find-humans)
+M (SetLink
+     (ListLink
+      (ConceptNode "Socrates" (stv 0.001 0.9))
+     )
+     (ListLink
+      (ConceptNode "Einstein" (stv 0.001 0.9))
+     )
+     (ListLink
+      (ConceptNode "man" (stv 0.01 0.9))
+     )
+     (ListLink
+      (ConceptNode "Peirce" (stv 0.001 0.9))
+     )
+  )
+
+N (test-end "PLNbyhand-tests")  

@@ -1,0 +1,338 @@
+N (use-modules (ice-9 readline)) 
+N (activate-readline)
+N (add-to-load-path "/usr/local/share/opencog/scm")
+N (add-to-load-path ".")
+N (use-modules (opencog))
+N (use-modules (opencog query))
+N (use-modules (opencog exec))
+N (use-modules (opencog logger))
+
+R A (cog-logger-set-level! "debug")
+M "INFO"
+
+N (use-modules (opencog rule-engine))
+
+
+;;-------------[IN 30] skipped-----------
+
+
+
+N	(use-modules (opencog rule-engine))
+N	(use-modules (srfi srfi-64))
+
+
+N (test-begin "PLNBackward-tests")
+	
+N	(define (gen-variable prefix i)
+	  (Variable (string-append prefix "-" (number->string i))))
+
+	
+N	(define (gen-variables prefix n)
+	  (if (= n 0)
+	
+		  '()
+	
+		  (append (gen-variables prefix (- n 1))
+				  (list (gen-variable prefix (- n 1))))))
+	
+N	(define (gen-fuzzy-conjunction-introduction-rule nary)
+	  (let* ((variables (gen-variables "$X" nary))
+			 (EvaluationT (Type "EvaluationLink"))
+			 (InheritanceT (Type "InheritanceLink"))
+			 (type (TypeChoice EvaluationT InheritanceT))
+			 (gen-typed-variable (lambda (x) (TypedVariable x type)))
+			 (vardecl (VariableList (map gen-typed-variable variables)))
+			 (pattern (And variables))
+			 (rewrite (ExecutionOutput
+						(GroundedSchema "scm: fuzzy-conjunction-introduction-formula")
+						(List (And variables) (Set variables)))))
+		(Bind
+		  vardecl
+		  pattern
+		  rewrite)))
+	
+N	(define (is-set l)
+	  (cond ((null? l) #t)
+			((member (car l) (cdr l)) #f)
+			(else (is-set (cdr l)))))
+
+N	(define (fuzzy-conjunction-introduction-precondition S)
+	  (bool->tv (is-confident-enough-set (cog-outgoing-set S))))
+
+N	(define (is-confident-enough-set andees)
+	  (let* ((confident-enough (lambda (A) (> (cog-stv-confidence A) 0))))
+		(and (is-set andees)
+			 (every confident-enough andees))))
+
+N	(define (fuzzy-conjunction-introduction-formula A S)
+	  (let* ((andees (cog-outgoing-set S))
+			 (min-s-atom (min-element-by-key andees cog-stv-strength))
+			 (min-c-atom (min-element-by-key andees cog-stv-confidence))
+			 (min-s (cog-stv-strength min-s-atom))
+			 (min-c (cog-stv-confidence min-c-atom)))
+		(if (is-confident-enough-set andees)       						   
+			(cog-set-tv! A (stv min-s min-c)))))
+
+	
+N	(define fuzzy-conjunction-introduction-2ary-rule
+	  (gen-fuzzy-conjunction-introduction-rule 2))
+N	(define fuzzy-conjunction-introduction-2ary-rule-name
+	  (DefinedSchema "fuzzy-conjunction-introduction-2ary-rule"))
+	  
+R B (DefineLink
+	  fuzzy-conjunction-introduction-2ary-rule-name
+	  fuzzy-conjunction-introduction-2ary-rule)
+M	(DefineLink
+	   (DefinedSchemaNode "fuzzy-conjunction-introduction-2ary-rule")
+	   (BindLink
+		  (VariableList
+			 (TypedVariableLink
+				(VariableNode "$X-0")
+				(TypeChoice
+				   (TypeNode "EvaluationLink")
+				   (TypeNode "InheritanceLink")
+				)
+			 )
+			 (TypedVariableLink
+				(VariableNode "$X-1")
+				(TypeChoice
+				   (TypeNode "EvaluationLink")
+				   (TypeNode "InheritanceLink")
+				)
+			 )
+		  )
+		  (AndLink
+			 (VariableNode "$X-0")
+			 (VariableNode "$X-1")
+		  )
+		  (ExecutionOutputLink
+			 (GroundedSchemaNode "scm: fuzzy-conjunction-introduction-formula")
+			 (ListLink
+				(AndLink
+				   (VariableNode "$X-0")
+				   (VariableNode "$X-1")
+				)
+				(SetLink
+				   (VariableNode "$X-0")
+				   (VariableNode "$X-1")
+				)
+			 )
+		  )
+	   )
+	)
+	
+N	(define conditional-full-instantiation-meta-variables
+	  (VariableList
+		 (TypedVariable
+			(Variable "$TyVs")
+			(TypeChoice
+			   (Type "TypedVariableLink")
+			   (Type "VariableList")))
+		 (Variable "$P")
+		 (Variable "$Q")))
+
+N	(define conditional-full-instantiation-meta-body
+	  (let* ((implication (Quote (ImplicationScope
+							 (Unquote (Variable "$TyVs"))
+							 (Unquote (Variable "$P"))
+							 (Unquote (Variable "$Q")))))
+			 (precondition (Evaluation
+							 (GroundedPredicate "scm: true-enough")
+							 implication)))
+	  (And
+		implication
+		precondition)))
+
+N	(define conditional-full-instantiation-meta-rewrite
+	  (let* ((TyVs (Variable "$TyVs"))
+			 (P (Variable "$P"))
+			 (Q (Variable "$Q"))
+			 (implication (Quote (ImplicationScope
+							 (Unquote TyVs)
+							 (Unquote P)
+							 (Unquote Q)))))
+		(Quote (Bind
+		  (Unquote TyVs)
+		  (And
+			(Unquote (LocalQuote (LocalQuote P)))
+			(Evaluation (GroundedPredicate "scm: true-enough") (Unquote P)))
+		  (ExecutionOutput
+			(GroundedSchema "scm: conditional-full-instantiation-formula")
+			(Unquote
+			  (ListLink
+				Q
+				implication
+				P)))))))
+
+N	(define conditional-full-instantiation-meta-rule
+	  (BindLink
+		 conditional-full-instantiation-meta-variables
+		 conditional-full-instantiation-meta-body
+		 conditional-full-instantiation-meta-rewrite))
+
+N	(define (conjunction-fuzzy-eval an)
+	  (let* ((outg (cog-outgoing-set an))
+			 (min-s-atom (min-element-by-key outg cog-stv-strength))
+			 (min-c-atom (min-element-by-key outg cog-stv-confidence))
+			 (min-s (cog-stv-strength min-s-atom))
+			 (min-c (cog-stv-confidence min-s-atom)))
+		(stv min-s min-c)))
+
+N	(define (true-enough-bool a)
+	  (let ((s (cog-stv-strength a)) (c (cog-stv-confidence a)))
+		(and (> s 0.5) (> c 0.5))))
+
+N	(define (true-enough a)
+	  (bool->tv (true-enough-bool a)))
+
+N	(define (conditional-full-instantiation-formula Q Impl P)
+
+	  (if (and (true-enough-bool Impl) (true-enough-bool P))
+		  (cog-set-tv! Q (stv 1 1))))
+
+N	(define conditional-full-instantiation-meta-rule-name
+	  (DefinedSchemaNode "conditional-full-instantiation-meta-rule"))
+	  
+R C	(DefineLink conditional-full-instantiation-meta-rule-name
+	  conditional-full-instantiation-meta-rule)
+M	(DefineLink
+	   (DefinedSchemaNode "conditional-full-instantiation-meta-rule")
+	   (BindLink
+		  (VariableList
+			 (TypedVariableLink
+				(VariableNode "$TyVs")
+				(TypeChoice
+				   (TypeNode "TypedVariableLink")
+				   (TypeNode "VariableList")
+				)
+			 )
+			 (VariableNode "$P")
+			 (VariableNode "$Q")
+		  )
+		  (AndLink
+			 (QuoteLink
+				(ImplicationScopeLink
+				   (UnquoteLink
+					  (VariableNode "$TyVs")
+				   )
+				   (UnquoteLink
+					  (VariableNode "$P")
+				   )
+				   (UnquoteLink
+					  (VariableNode "$Q")
+				   )
+				)
+			 )
+			 (EvaluationLink
+				(GroundedPredicateNode "scm: true-enough")
+				(QuoteLink
+				   (ImplicationScopeLink
+					  (UnquoteLink
+						 (VariableNode "$TyVs")
+					  )
+					  (UnquoteLink
+						 (VariableNode "$P")
+					  )
+					  (UnquoteLink
+						 (VariableNode "$Q")
+					  )
+				   )
+				)
+			 )
+		  )
+		  (QuoteLink
+			 (BindLink
+				(UnquoteLink
+				   (VariableNode "$TyVs")
+				)
+				(AndLink
+				   (UnquoteLink
+					  (LocalQuoteLink
+						 (LocalQuoteLink
+							(VariableNode "$P")
+						 )
+					  )
+				   )
+				   (EvaluationLink
+					  (GroundedPredicateNode "scm: true-enough")
+					  (UnquoteLink
+						 (VariableNode "$P")
+					  )
+				   )
+				)
+				(ExecutionOutputLink
+				   (GroundedSchemaNode "scm: conditional-full-instantiation-formula")
+				   (UnquoteLink
+					  (ListLink
+						 (VariableNode "$Q")
+						 (QuoteLink
+							(ImplicationScopeLink
+							   (UnquoteLink
+								  (VariableNode "$TyVs")
+							   )
+							   (UnquoteLink
+								  (VariableNode "$P")
+							   )
+							   (UnquoteLink
+								  (VariableNode "$Q")
+							   )
+							)
+						 )
+						 (VariableNode "$P")
+					  )
+				   )
+				)
+			 )
+		  )
+	   )
+	)
+	
+N	(define ci-rbs (ConceptNode "ci-rbs"))
+N	(Inheritance ci-rbs (ConceptNode "URE"))
+
+R D	(MemberLink (stv 1 1)
+	   conditional-full-instantiation-meta-rule-name
+	   ci-rbs
+	)
+M	(MemberLink (stv 1 1)
+	   (DefinedSchemaNode "conditional-full-instantiation-meta-rule")
+	   (ConceptNode "ci-rbs")
+	)
+	
+R E	(MemberLink (stv 1 1) fuzzy-conjunction-introduction-2ary-rule-name ci-rbs )
+M	(MemberLink (stv 1 1)
+	   (DefinedSchemaNode "fuzzy-conjunction-introduction-2ary-rule")
+	   (ConceptNode "ci-rbs")
+	)
+	
+R F	(ExecutionLink (SchemaNode "URE:maximum-iterations") ci-rbs (NumberNode "20"))
+M	(ExecutionLink
+	   (SchemaNode "URE:maximum-iterations")
+	   (ConceptNode "ci-rbs")
+	   (NumberNode "20.000000")
+	)
+	
+R G	(EvaluationLink (stv 0 1) (PredicateNode "URE:attention-allocation") ci-rbs )
+M	(EvaluationLink (stv 0 1)
+	   (PredicateNode "URE:attention-allocation")
+	   (ConceptNode "ci-rbs")
+	)
+
+N	(define target
+	  (InheritanceLink (VariableNode "$what") (ConceptNode "green"))
+	)
+	
+N	(define vardecl
+	  (TypedVariable (VariableNode "$what") (TypeNode "ConceptNode"))
+	)
+	
+R H	(cog-bc ci-rbs target #:vardecl vardecl)
+M	(SetLink
+	   (InheritanceLink (stv 1 1)
+		  (ConceptNode "Fritz")
+		  (ConceptNode "green")
+	   )
+	)
+
+N (test-end "PLNBackward-tests")	
+
